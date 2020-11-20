@@ -3,8 +3,12 @@
 
 #include "Eigen/Dense"
 #include "measurement_package.h"
+#include <vector>
+#include <string>
+#include <fstream>
 
 class UKF {
+    
  public:
   /**
    * Constructor
@@ -59,9 +63,12 @@ class UKF {
 
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
+  ///* predicted sigma measurement matrix
+  Eigen::MatrixXd Zsig_pred_;
 
   // time when the state is true, in us
   long long time_us_;
+  long long previous_time_us_;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
@@ -95,6 +102,13 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+  ///* NIS for Lidar
+  std::vector<double> lidar_nis_;
+
+  ///* NIS for Radar
+  std::vector<double> radar_nis_;
+    
 };
 
 #endif  // UKF_H
