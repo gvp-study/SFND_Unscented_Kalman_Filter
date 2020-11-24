@@ -24,10 +24,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3.0;//2.0;//30;
+  std_a_ = 10.0;//2.0;//30;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.3;//0.5;//30;
+  std_yawdd_ = 3.0;//0.5;//30;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -166,7 +166,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   
     // print the output
     cout << "Now " << time_us_ << " Old " << previous_time_us_ << " DT " << dt << endl;
-    cout << "x_\n" << x_.transpose() << endl;
+    cout << "x_ " << x_.transpose() << endl;
 //  cout << "P_\n" << P_ << endl;
 	
 }
@@ -234,9 +234,9 @@ void UKF::Prediction(double delta_t) {
     Xsig_aug.col(i+1+n_aug) = x_aug - factor * S.col(i);
   }
   //print result
-//  std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
+  std::cout << "Xsig_aug = " << std::endl << Xsig_aug.transpose() << std::endl;
 //  std::cout << "P_aug = " << std::endl << P_aug << std::endl;
-
+  std::cout << "x_aug = " << std::endl << x_aug.transpose() << std::endl;
   //create matrix with predicted sigma points as columns
   MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
 
@@ -566,7 +566,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
           0, std_radphi*std_radphi, 0,
           0, 0,std_radrd*std_radrd;
   S = S + R;
-  
 
   //print result
 //  std::cout << "z_pred Radar: " << std::endl << z_pred.transpose() << std::endl;
