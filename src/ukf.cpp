@@ -7,6 +7,8 @@ using Eigen::VectorXd;
 
 using std::cout;
 using std::endl;
+
+
 /**
  * Initializes Unscented Kalman filter
  */
@@ -81,6 +83,7 @@ UKF::UKF() {
   
   // Init Plant Covariance
   P_ = MatrixXd::Identity(n_x_, n_x_);
+  P_(2, 2) = P_(3, 3) = P_(4, 4) = 0.5;
   
   // Sigma point matrix
   Xsig_pred_ = MatrixXd(n_x_, 2*n_x_ + 1);
@@ -640,4 +643,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //write result
   x_ = x;
   P_ = P;
+
+  
 }

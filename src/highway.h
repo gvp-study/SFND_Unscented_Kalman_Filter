@@ -1,9 +1,12 @@
 /* \author Aaron Brown */
 // Handle logic for creating traffic on highway and animating it
 
+#include <iostream>
+#include <fstream>
 #include "render/render.h"
 #include "sensors/lidar.h"
 #include "tools.h"
+using namespace std;
 
 class Highway
 {
@@ -16,7 +19,8 @@ public:
     std::vector<double> rmseThreshold = {0.30,0.16,0.95,0.70};
     std::vector<double> rmseFailLog = {0.0,0.0,0.0,0.0};
     Lidar* lidar;
-	
+    ofstream ofs;
+
     // Parameters 
     // --------------------------------
     // Set which cars to track with UKF
@@ -29,10 +33,15 @@ public:
     double projectedTime = 2;//0;
     int projectedSteps = 6;//0;
     // --------------------------------
-
+    ~Highway()
+    {
+	ofs.close();
+    }
     Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     {
 
+	ofs.open("../nmse.txt");
+	
 	tools = Tools();
 	
 	egoCar = Car(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar");
@@ -151,7 +160,8 @@ public:
 
 	if(timestamp > 1.0e6)
 	{
-
+	    ofs << timestamp << " " << rmse[0] << " " << rmse[1] << " " << rmse[2] << " " << rmse[3] << endl;
+	    
 	    if(rmse[0] > rmseThreshold[0])
 	    {
 		rmseFailLog[0] = rmse[0];
