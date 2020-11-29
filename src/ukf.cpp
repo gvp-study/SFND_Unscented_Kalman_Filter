@@ -149,15 +149,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     //
     // Predict using the delta t
     //
-    /*
     while (dt > 0.1) {
         constexpr double delta_t = 0.05;
         Prediction(delta_t);
         dt -= delta_t;
     }
     Prediction(dt);
-    */
-    Prediction(dt);
+//    Prediction(dt);
     //
     // Update using measurements.
     //
