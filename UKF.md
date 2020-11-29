@@ -2,12 +2,13 @@
 ## George V. Paul
 [Github link to this project is here](https://github.com/gvp-study/SFND_Unscented_Kalman_Filter.git)
 
+In this project I implemented an Unscented Kalman Filter to estimate the state of multiple cars on a highway using noisy lidar and radar measurements. I tuned the filter parameters such that the resulting RMSE values for the position and velocities were lower that the tolerance outlined in the project rubric. The result of the tracking is shown in the video below.
+
 <img src="media/ukf-laser-radar.gif" width="700" height="400" />
 
+A screenshot of an instant shows that the error measure RMSE for the 4 state variables (X, Y, Vx, Vy) are well below thresholds.
 
-In this project I implemented an Unscented Kalman Filter to estimate the state of multiple cars on a highway using noisy lidar and radar measurements. I tuned the filter parameters such that the resulting RMSE values for the position and velocities lower that the tolerance outlined in the project rubric. The result of the tracking is shown in the video below.
-
-<img src="media/ukf_highway.png" width="700" height="400" />
+<img src="media/ukf-laser-radar.png" width="700" height="400" />
 
 The starter code uses `main.cpp` which is using `highway.h` to create a straight 3 lane highway environment with 3 traffic cars and the main ego car at the center.
 The viewer scene is centered around the ego car and the coordinate system is relative to the ego car as well. The ego car is green while the other traffic cars are blue. The traffic cars will be accelerating and altering their steering to change lanes. Each of the traffic car's has it's own UKF object generated for it, and will update each individual one during every time step.
@@ -16,7 +17,7 @@ The red spheres above cars represent the (x,y) lidar detection and the purple li
 
 ---
 ## UKF Noise Standard Deviations
-The major modification I did was to modify the linear acceleration noise and the yaw rotation acceleration noise. The standard deviations were changed to the values shown below. These values were considerably lower than the initial values of 30.
+The major modification I did was to modify the linear acceleration noise and the yaw rotation acceleration noise. I recorded the RMSE values for a run into a text file and computed the mean RMSE for all the 4 state variables. I then used a python script to plot and compute the means of the RMSE values. After experimenting with several combinations, the standard deviations were changed to the values shown below. These values were considerably lower than the initial values of 30.
 ```C++
 UKF::UKF() {
 ...
@@ -26,7 +27,40 @@ UKF::UKF() {
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 3.0;
 ```
-To implement the UKF, I added the following member variables like number of augmented state elements, lambda, weights, and initialized the starting state x_ and the plant covariance P_ as shown below.
+
+# Analysis of the RMSE
+As instructed, I altered the standard deviations of the linear and rotational acceleration noise till I found a combination (5.0, 3.0) which minimized the mean RMSE values.
+I also compared the root mean squared error for the X position, the Y position, the X velocity and the Y velocity by switching on and off the 2 sensors in combinations and graphed the output as shown below. I plotted the RMSE for each of the 4 variable for the duration of the run and the results are as shown below.
+<img src="media/all-plots.png" width="700" height="400" />
+Clearly the fusion of the radar and laser measurements makes the state estimates for all the 4 variables converge to the lowest means when compared to the laser only or the radar only cases as seen from the graph and their means.
+
+## RMSE Radar only
+I switched off the laser sensing with the use_laser boolean and recorded the RMSE for the 4 variable and the result is shown below.
+<img src="media/radar.png" width="700" height="400" />
+Note that the RMSE values are in the 2-4 range, although they seem to be asymptotically decreasing as time progresses.
+With just the radar, the RMSE for all 4 variables cross their respective thresholds.
+
+## RMSE Laser only
+Next I switched off the radar by setting the use_radar to false and recording the RMSE for the 4 variables. The result is shown below. The values are definitely lower than for the radar only case.
+<img src="media/laser.png" width="700" height="400" />
+With just the laser, the position variables (X, Y) can be directly measued from the laser are correctly predicted within the thresholds. The velocities variables derived from the difference between consecutive measurements are obviously less accurate.
+
+## RMSE Laser + Radar
+Finally, I allowed the use of both the laser and the radar and the RMSE values for all the 4 variables stayed below the acceptable thresholds. The result is shown below.
+<img src="media/laser+radar.png" width="700" height="400" />
+The use of the laser and radar clearly improves the accuracy of the prediction. This is due to the complementary nature of the laser and radar. The laser is a relatively accurate positional sensor while the radar is relatively accurate velocity sensor. Together they help predict the position and velocity accurately.
+
+## UKF Implementation Details
+
+To implement the UKF I filled in these member functions:
+* UKF::UKF() Constructor
+* ProcessMeasurements
+* Prediction
+* UpdateLidar
+* UpdateRadar
+The details are shown below.
+
+In the UKF constructor I added the following member variables like number of augmented state elements, lambda, weights, and initialized the starting state x_ and the plant covariance P_ as shown below.
 
 ```C++
 
@@ -611,24 +645,3 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 }
 
 ```
-# Analysis of the RMSE
-As instructed, I altered the standard deviations of the linear and rotational acceleration noise till I found a combination (5.0, 3.0) which minimized the mean RMSE values.
-I also compared the root mean squared error for the X position, the Y position, the X velocity and the Y velocity by switching on and off the 2 sensors in combinations and graphed the output as shown below. I plotted the RMSE for each of the 4 variable for the duration of the run and the results are as shown below.
-<img src="media/all-plots.png" width="700" height="400" />
-Clearly the fusion of the radar and laser measurements makes the state estimates for all the 4 variables converge to the lowest means when compared to the laser only or the radar only cases as seen from the graph and their means.
-
-## RMSE Radar only
-I switched off the laser sensing with the use_laser boolean and recorded the RMSE for the 4 variable and the result is shown below.
-<img src="media/radar.png" width="700" height="400" />
-Note that the RMSE values are in the 2-4 range, although they seem to be asymptotically decreasing as time progresses.
-With just the radar, the RMSE for all 4 variables cross their respective thresholds.
-
-## RMSE Laser only
-Next I switched off the radar by setting the use_radar to false and recording the RMSE for the 4 variables. The result is shown below. The values are definitely lower than for the radar only case.
-<img src="media/laser.png" width="700" height="400" />
-With just the laser, the position variables (X, Y) can be directly measued from the laser are correctly predicted within the thresholds. The velocities variables derived from the difference between consecutive measurements are obviously less accurate.
-
-## RMSE Laser + Radar
-Finally, I allowed the use of both the laser and the radar and the RMSE values for all the 4 variables stayed below the acceptable thresholds. The result is shown below.
-<img src="media/laser+radar.png" width="700" height="400" />
-The use of the laser and radar clearly improves the accuracy of the prediction. This is due to the complementary nature of the laser and radar. The laser is a relatively accurate positional sensor while the radar is relatively accurate velocity sensor. Together they help predict the position and velocity accurately.
