@@ -301,7 +301,9 @@ void UKF::Prediction(double delta_t) {
   for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
     x = x + weights(i) * Xsig_pred.col(i);
   }
-
+  std::cout << "Xsig_pred\n" << Xsig_pred.transpose() << std::endl;
+  std::cout << "x " << x.transpose() << std::endl;
+  
   //predicted state covariance matrix
   P.fill(0.0);
   for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points

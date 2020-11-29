@@ -5,20 +5,18 @@
 <img src="media/ukf-laser-radar.gif" width="700" height="400" />
 
 
-In this project you will implement an Unscented Kalman Filter to estimate the state of multiple cars on a highway using noisy lidar and radar measurements. Passing the project requires obtaining RMSE values that are lower that the tolerance outlined in the project rubric.
+In this project I implemented an Unscented Kalman Filter to estimate the state of multiple cars on a highway using noisy lidar and radar measurements. I tuned the filter parameters such that the resulting RMSE values for the position and velocities lower that the tolerance outlined in the project rubric. The result of the tracking is shown in the video below.
 
 <img src="media/ukf_highway.png" width="700" height="400" />
 
-`main.cpp` is using `highway.h` to create a straight 3 lane highway environment with 3 traffic cars and the main ego car at the center.
-The viewer scene is centered around the ego car and the coordinate system is relative to the ego car as well. The ego car is green while the
-other traffic cars are blue. The traffic cars will be accelerating and altering their steering to change lanes. Each of the traffic car's has
-it's own UKF object generated for it, and will update each indidual one during every time step.
+The starter code uses `main.cpp` which is using `highway.h` to create a straight 3 lane highway environment with 3 traffic cars and the main ego car at the center.
+The viewer scene is centered around the ego car and the coordinate system is relative to the ego car as well. The ego car is green while the other traffic cars are blue. The traffic cars will be accelerating and altering their steering to change lanes. Each of the traffic car's has it's own UKF object generated for it, and will update each individual one during every time step.
 
-The red spheres above cars represent the (x,y) lidar detection and the purple lines show the radar measurements with the velocity magnitude along the detected angle. The Z axis is not taken into account for tracking, so you are only tracking along the X/Y axis.
+The red spheres above cars represent the (x,y) lidar detection and the purple lines show the radar measurements with the velocity magnitude along the detected angle. The tracking is only done along the X/Y axis.
 
 ---
 ## UKF Noise Standard Deviations
-I modified the linear acceleration noise and the yaw rotation acceleration noise. The standard deviations were changed to the values shown below. These values were considerably lower than the given values of 30.
+The major modification I did was to modify the linear acceleration noise and the yaw rotation acceleration noise. The standard deviations were changed to the values shown below. These values were considerably lower than the initial values of 30.
 ```C++
 UKF::UKF() {
 ...
@@ -63,7 +61,8 @@ To implement the UKF, I added the following member variables like number of augm
 
 ```
 ### ProcessMeasurements
-I then filled in the ProcessMeasurements() functions as follows.
+I then filled in the ProcessMeasurements() functions as follows. This function checks if the system is initializing and if so, uses the lidar or radar measurements to directly set some of the elements of the state vector if possible. If the state has been initialized, it will first predict the estimated state based on the plant equation for the delta_t. Once this apriori state is obtained, it will check the type of measurement and call the UpdateLidar or UpdateRadar functions appropriately to update the state vector from the measurement.
+
 ```C++
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     bool is_radar = meas_package.sensor_type_ == MeasurementPackage::RADAR;
@@ -81,9 +80,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
      */
     if(!is_initialized_)
     {
-	// Try to initialize from the first measurement
-	if (is_radar)
-	{
+	     // Try to initialize from the first measurement
+	      if (is_radar)
+	       {
 	    //
 	    //Convert radar from polar to cartesian coordinates and initialize state.
 	    //
@@ -96,8 +95,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	    x_(3) = 0.0;
 	    x_(4) = 0.0;
 
-	}
-	else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+	   }
+	    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
 	    //
 	    //Initialize state.
 	    //
@@ -115,33 +114,22 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     //
     // Predict using the delta t
     //
-    while (dt > 0.1) {
-        constexpr double delta_t = 0.05;
-        Prediction(delta_t);
-        dt -= delta_t;
-    }
     Prediction(dt);
-//    Prediction(dt);
     //
     // Update using measurements.
     //
     if (is_radar && use_radar_) {
-	// Radar updates
-	UpdateRadar(meas_package);
+	     // Radar updates
+	      UpdateRadar(meas_package);
     } else if(is_lidar && use_laser_) {
-	// Laser updates
-	UpdateLidar(meas_package);
+	     // Laser updates
+	      UpdateLidar(meas_package);
     }
-
-    // print the output
-    cout << "Now " << time_us_ << " Old " << previous_time_us_ << " DT " << dt << endl;
-    cout << "x_ " << x_.transpose() << endl;
-//  cout << "P_\n" << P_ << endl;
 
 }
 ```
 ### Prediction
-I then filled in the Prediction() function.
+The Prediction() function computes the state using the Sigma points as described in the UKF lessons. This involves computing the augmented state and covariance matrix.
 ```C++
 void UKF::Prediction(double delta_t) {
   /**
@@ -298,7 +286,8 @@ void UKF::Prediction(double delta_t) {
 }
 ```
 ### UpdateLidar
-I then filled in the UpdateLidar() function like so:
+The UpdateLidar() function takes the z = (x,y) measurement data and builds the appropriate Z sigmna points. This is used to generate the predicted z which is then used to generate the correction using the Kalman gain. The innovation from this is added to the estimated state vector.
+
 ```C++
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
@@ -449,8 +438,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 }
 ```
 ### UpdateRadar
-
-The Predicition() function used the UpdateRadar() function.
+The UpdateRadar() function takes the z = (r, phi, rdot) measurement data and builds the appropriate Z sigmna points. This is used to generate the predicted z which is then used to generate the correction using the Kalman gain. The innovation from this is added to the estimated state vector.
 ```C++
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
   /**
@@ -620,15 +608,14 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   x_ = x;
   P_ = P;
 
-
 }
 
 ```
 # Analysis of the RMSE
-As instructed, I compared the root mean squared error for the X position, Y position, X velocity and the Y velocity by switching on and off the 2 sensors in combinations and graphed the output as shown below. I plotted the RMSE for each of the 4 variable for the duration of the run and the results are as shown below.
+As instructed, I altered the standard deviations of the linear and rotational acceleration noise till I found a combination (5.0, 3.0) which minimized the mean RMSE values.
+I also compared the root mean squared error for the X position, the Y position, the X velocity and the Y velocity by switching on and off the 2 sensors in combinations and graphed the output as shown below. I plotted the RMSE for each of the 4 variable for the duration of the run and the results are as shown below.
 <img src="media/all-plots.png" width="700" height="400" />
-Clearly the combination of radar and laser makes the state estimates for all the 4 variables converge to the lowest means when compared to the laser only or the radar only cases as seen from the graph and their means.
-
+Clearly the fusion of the radar and laser measurements makes the state estimates for all the 4 variables converge to the lowest means when compared to the laser only or the radar only cases as seen from the graph and their means.
 
 ## RMSE Radar only
 I switched off the laser sensing with the use_laser boolean and recorded the RMSE for the 4 variable and the result is shown below.
